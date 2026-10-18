@@ -84,7 +84,7 @@ const createRoom = (savedDocument, roomId) => {
   source.insert(0, savedDocument?.content || defaultDocumentContent);
 
   return {
-    users: new Set(),
+    users: new Map(),
     cursors: new Map(),
     doc,
   };
@@ -110,11 +110,14 @@ io.on("connection", (socket) => {
     if (currentRoom) {
       socket.leave(currentRoom);
       const previousRoom = rooms.get(currentRoom);
-      previousRoom?.users.delete(currentUser);
+      previousRoom?.users.delete(socket.id);
       previousRoom?.cursors.delete(socket.id);
       if (previousRoom) {
         io.to(currentRoom).emit("cursorLeft", socket.id);
-        io.to(currentRoom).emit("userJoined", Array.from(previousRoom.users));
+        io.to(currentRoom).emit("userJoined", Array.from(previousRoom.users, ([socketId, name]) => ({
+          socketId,
+          userName: name,
+        })));
       }
     }
 
@@ -129,12 +132,15 @@ io.on("connection", (socket) => {
     }
 
     const room = rooms.get(roomId);
-    room.users.add(userName);
+    room.users.set(socket.id, userName);
 
     socket.emit("documentState", Y.encodeStateAsUpdate(room.doc));
     socket.emit("cursorState", Array.from(room.cursors.values()));
 
-    io.to(roomId).emit("userJoined", Array.from(rooms.get(currentRoom).users));
+    io.to(roomId).emit("userJoined", Array.from(room.users, ([socketId, name]) => ({
+      socketId,
+      userName: name,
+    })));
     acknowledge?.({ ok: true });
   });
 
@@ -199,11 +205,14 @@ io.on("connection", (socket) => {
     if (!currentRoom || !currentUser) return;
 
     const room = rooms.get(currentRoom);
-    room?.users.delete(currentUser);
+    room?.users.delete(socket.id);
     room?.cursors.delete(socket.id);
     if (room) {
       io.to(currentRoom).emit("cursorLeft", socket.id);
-      io.to(currentRoom).emit("userJoined", Array.from(room.users));
+      io.to(currentRoom).emit("userJoined", Array.from(room.users, ([socketId, name]) => ({
+        socketId,
+        userName: name,
+      })));
     }
     socket.leave(currentRoom);
     currentRoom = null;

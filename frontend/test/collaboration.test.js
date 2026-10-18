@@ -128,7 +128,12 @@ test("collaboration broadcasts edits and cursors, then restores saved content", 
     secondClient = await connectClient(serverUrl);
 
     const firstDocument = await joinRoom(firstClient, "integration-room", "Ada");
-    const secondDocument = await joinRoom(secondClient, "integration-room", "Lin");
+    const duplicateNamePresence = nextEvent(firstClient, "userJoined");
+    const secondDocument = await joinRoom(secondClient, "integration-room", "Ada");
+    assert.deepEqual(await duplicateNamePresence, [
+      { socketId: firstClient.id, userName: "Ada" },
+      { socketId: secondClient.id, userName: "Ada" },
+    ]);
 
     replaceSharedText(firstDocument, "title", "Integration notes");
     replaceSharedText(firstDocument, "source", "Shared body");
@@ -155,9 +160,13 @@ test("collaboration broadcasts edits and cursors, then restores saved content", 
     assert.equal(cursor.socketId, firstClient.id);
 
     const cursorLeft = nextEvent(secondClient, "cursorLeft");
+    const remainingPresence = nextEvent(secondClient, "userJoined");
     firstClient.disconnect();
     firstClient = null;
     assert.equal(await cursorLeft, cursor.socketId);
+    assert.deepEqual(await remainingPresence, [
+      { socketId: secondClient.id, userName: "Ada" },
+    ]);
 
     secondClient.disconnect();
     secondClient = null;

@@ -21,6 +21,21 @@ const getCursorColor = (socketId) => {
   return cursorColors[hash % cursorColors.length];
 };
 
+const normalizeRoomUsers = (participants) => {
+  if (!Array.isArray(participants)) return [];
+
+  return participants.flatMap((participant, index) => {
+    const isLegacyEntry = typeof participant === "string";
+    const name = isLegacyEntry ? participant : participant?.userName ?? participant?.name;
+    if (typeof name !== "string" || !name.trim()) return [];
+
+    const socketId = !isLegacyEntry && typeof participant.socketId === "string" && participant.socketId
+      ? participant.socketId
+      : `legacy-${index}`;
+    return [{ socketId, userName: name.trim() }];
+  });
+};
+
 const renderCursorOverlay = ({ content, cursors, sharedDoc, localSocketId, contentRef }) => {
   const source = sharedDoc?.getText("source");
   if (!source) return null;
@@ -117,6 +132,7 @@ const App = () => {
   const [typing, setTyping] = useState("");
   const [joinError, setJoinError] = useState("");
   const [isPreview, setIsPreview] = useState(false);
+  const [paperHeight, setPaperHeight] = useState(0);
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [shareStatus, setShareStatus] = useState("");
   const ydocRef = useRef(null);
@@ -124,11 +140,14 @@ const App = () => {
   const titleObserverRef = useRef(null);
   const updateHandlerRef = useRef(null);
   const cursorOverlayRef = useRef(null);
+  const documentCanvasRef = useRef(null);
+  const documentMeasureRef = useRef(null);
+  const documentPageRef = useRef(null);
   const saveSequenceRef = useRef(0);
 
   useEffect(() => {
     socket.on("userJoined", (users) => {
-      setUsers(users);
+      setUsers(normalizeRoomUsers(users));
     });
 
     const applyDocumentUpdate = (update) => {
@@ -307,6 +326,24 @@ const App = () => {
     });
   };
 
+  useEffect(() => {
+    const measurePaper = () => {
+      const page = documentPageRef.current;
+      const measure = documentMeasureRef.current;
+      if (!page || !measure || isPreview) return;
+
+      const pageStyle = window.getComputedStyle(page);
+      const pagePadding =
+        Number.parseFloat(pageStyle.paddingTop) + Number.parseFloat(pageStyle.paddingBottom);
+      const availableHeight = page.clientHeight - pagePadding - 42;
+      setPaperHeight(Math.max(availableHeight, measure.scrollHeight));
+    };
+
+    measurePaper();
+    window.addEventListener("resize", measurePaper);
+    return () => window.removeEventListener("resize", measurePaper);
+  }, [content, documentReady, isPreview]);
+
   const handleDownloadDocument = () => {
     const safeTitle = Array.from(title.trim() || roomId, (character) =>
       character.charCodeAt(0) < 32 || '<>:"/\\|?*'.includes(character)
@@ -388,7 +425,7 @@ const App = () => {
                 teams to create.
             </h1>
             <p className="join-description">
-              Online platform where you can write, preview, and save documents with your team.
+              Where you can write and edit documents with your team.
             </p>
           </section>
 
@@ -433,72 +470,64 @@ const App = () => {
   return (
     <div className="editor-container">
       <div className="sidebar">
-        <div className="room-info">
-          <span className="brand-mark" aria-hidden="true">C</span>
-          <div>
-            <p className="eyebrow">DOCUMENT</p>
-            <h2>{roomId}</h2>
+        <div className="sidebar-header">
+          <div className="room-info">
+            <div>
+              <p className="eyebrow">DOCUMENT</p>
+              <input
+                className="sidebar-title-input"
+                value={title}
+                onChange={handleTitleChange}
+                aria-label="Document title"
+                placeholder={roomId}
+                maxLength={120}
+                disabled={!documentReady}
+              />
+            </div>
           </div>
+          <button className="share-button" onClick={copyInviteLink}>
+            {shareStatus || "Copy link"}
+          </button>
         </div>
         <div className="presence-heading">
           <h3>In this room</h3>
           <span>{users.length}</span>
         </div>
         <ul className="user-list">
-          {users.map((user, index) => (
-            <li key={`${user}-${index}`}>
-              <span>{user}</span>
-              {user === userName && <span className="you-label">you</span>}
+          {users.map(({ socketId, userName: name }) => (
+            <li key={socketId}>
+              <span className="presence-name">{name}</span>
+              {socketId === socket.id && <span className="you-label">you</span>}
             </li>
           ))}
         </ul>
         <p className="typing-indicator" aria-live="polite">{typing}</p>
-        <button
-          className="download-document-button"
-          onClick={handleDownloadDocument}
-          disabled={!documentReady}
-        >
-          Save as PDF
-        </button>
-        <button className="leave-button" onClick={leaveRoom}>Exit</button>
+        <div className="sidebar-bottom-actions">
+          <button
+            className="download-document-button"
+            onClick={handleDownloadDocument}
+            disabled={!documentReady}
+          >
+            Download
+          </button>
+          <button className="leave-button" onClick={leaveRoom}>Exit</button>
+        </div>
       </div>
 
       <div className="editor-wrapper">
         <header className="document-toolbar">
-          <div className="document-heading">
-            <input
-              className="document-title-input"
-              value={title}
-              onChange={handleTitleChange}
-              aria-label="Document title"
-              maxLength={120}
-              disabled={!documentReady}
-            />
-          </div>
           <div className="document-actions">
-            <span className="save-status" aria-live="polite">{saveStatus}</span>
-            <button className="share-button" onClick={copyInviteLink}>
-              {shareStatus || "Copy link"}
+            <button
+              className="preview-toggle-button"
+              aria-pressed={isPreview}
+              onClick={() => setIsPreview((current) => !current)}
+            >
+              {isPreview ? "Edit" : "Preview"}
             </button>
-            <div className="editor-mode" role="group" aria-label="Document view">
-              <button
-                className={!isPreview ? "active" : ""}
-                aria-pressed={!isPreview}
-                onClick={() => setIsPreview(false)}
-              >
-                Write
-              </button>
-              <button
-                className={isPreview ? "active" : ""}
-                aria-pressed={isPreview}
-                onClick={() => setIsPreview(true)}
-              >
-                Preview
-              </button>
-            </div>
+            <span className="save-status visually-hidden" aria-live="polite">{saveStatus}</span>
           </div>
         </header>
-        <main className="document-page">
+        <main className="document-page" ref={documentPageRef}>
           {isPreview ? (
             <article className="markdown-preview" aria-label="Markdown preview">
               {content ? (
@@ -508,7 +537,10 @@ const App = () => {
               )}
             </article>
           ) : (
-            <div className="document-editor">
+            <div
+              className="document-editor"
+              style={paperHeight ? { height: `${paperHeight}px` } : undefined}
+            >
               {renderCursorOverlay({
                 content,
                 cursors: remoteCursors,
@@ -518,6 +550,7 @@ const App = () => {
               })}
               <textarea
                 className="document-canvas"
+                ref={documentCanvasRef}
                 value={content}
                 onChange={handleContentChange}
                 onSelect={(event) => emitCursorUpdate(
@@ -534,6 +567,9 @@ const App = () => {
                 spellCheck="true"
                 disabled={!documentReady}
               />
+              <div className="document-measure" ref={documentMeasureRef} aria-hidden="true">
+                {content}
+              </div>
             </div>
           )}
           <footer className="document-footer">
