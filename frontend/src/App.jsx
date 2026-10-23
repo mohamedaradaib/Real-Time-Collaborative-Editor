@@ -409,10 +409,10 @@ const App = () => {
     return (
       <div className="join-container">
         <header className="join-topbar">
-          <a className="join-brand" href="/" aria-label="Real-Time Collaborative Platform home">
-            <span>Real-Time Collaborative Platform</span>
+          <a className="join-brand" href="/" aria-label="Real-Time Collaborative Editor home">
+            <span>Real-Time Collaborative Editor</span>
           </a>
-          <a className="join-contact" href="">
+          <a className="join-contact" href="https://github.com/mohamedaradaib/Real-Time-Collaborative-Editor">
             Contact
           </a>
         </header>
@@ -420,9 +420,9 @@ const App = () => {
         <main className="join-content">
           <section className="join-intro" aria-labelledby="join-title">
             <h1 id="join-title" className="join-title">
-                A platform for
+                An editor for
                 <br />
-                teams to create.
+                teams to document.
             </h1>
             <p className="join-description">
               Where you can write and edit documents with your team.
@@ -436,7 +436,7 @@ const App = () => {
               joinRoom();
             }}
           >
-            <h2>Enter room</h2>
+            <h2>Welcome</h2>
             <label className="visually-hidden" htmlFor="room-name">Room</label>
             <input
               id="room-name"
@@ -461,7 +461,7 @@ const App = () => {
         </main>
 
         <footer className="join-footer">
-          <span>© 2026 Real-Time Collaborative Platform | About | Terms of Service | Privacy Policy | Security | Disclosure</span>
+          <span>© 2026 Real-Time Collaborative Editor | About | Terms of Service | Privacy Policy | Security | Disclosure</span>
         </footer>
       </div>
     );
@@ -473,7 +473,6 @@ const App = () => {
         <div className="sidebar-header">
           <div className="room-info">
             <div>
-              <p className="eyebrow">DOCUMENT</p>
               <input
                 className="sidebar-title-input"
                 value={title}
@@ -579,7 +578,7 @@ const App = () => {
         </main>
       </div>
       <footer className="app-footer">
-        <span>© 2026 Real-Time Collaborative Platform | About | Terms of Service | Privacy Policy | Security | Disclosure</span>
+        <span>© 2026 Real-Time Collaborative Editor | About | Terms of Service | Privacy Policy | Security | Disclosure</span>
       </footer>
     </div>
   );

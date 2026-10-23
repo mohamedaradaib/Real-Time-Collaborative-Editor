@@ -1,13 +1,13 @@
-# Real-Time Collaborative Platform
+# Real-Time Collaborative Editor
 
-Real time browser-based collaborative platform where multiple users can join a room and text, edit, and review documents together in real time.
+A real-time collaborative editor designed for multi-user collaboration and seamless team workflows.
 
 ## Features
-- Real-time collaborative workspace with concurrent changes merged automatically
-- Room-based sessions with active user presence, typing indicators, live cursors, and selection highlights
-- Markdown writing and rendered preview with GitHub-flavored syntax
-- Shared document titles, automatic persistence, PDF export, word count, and copyable room links
-- Persistent document titles and content for each room
+- Live Markdown editing with concurrent changes merged automatically
+- Room-based collaboration with participant presence, typing indicators, live cursors, and selection highlights
+- Shared document titles and content, automatically saved for each room
+- GitHub-flavored Markdown preview, word count, and PDF export through the browser's print dialog
+- Copyable room links for inviting collaborators
 
 ## Tech Stack
 - JavaScript
@@ -23,7 +23,7 @@ Real time browser-based collaborative platform where multiple users can join a r
 - React Markdown
 
 ## How It Works
-The Markdown writing canvas and title are bound to a shared Yjs document. Yjs merges concurrent edits, and Socket.IO synchronizes document updates and room presence between users. Relative cursor positions and selections are broadcast to room members and removed when a user leaves; cursor presence is temporary and is not stored. The backend stores each room's title and content in SQLite and automatically saves edits, acknowledging writes so the editor can show save status. The sidebar can export the current document as a PDF through the browser's print dialog. Existing rooms are migrated from their saved source code without losing text. Copying a room link includes the room name, which is prefilled for invitees. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive content, and only deploy this application where you trust the users who can access it.
+The document title and Markdown canvas are bound to a shared Yjs document. Yjs merges concurrent edits, while Socket.IO synchronizes document updates and room presence. The sidebar shows the editable document title, participants, and sharing controls without a separate “DOCUMENT” heading. The backend saves each room's title and content in SQLite. Cursor positions, selections, and typing status are temporary and are removed when collaborators leave. The Markdown preview supports GitHub-flavored syntax, and PDF export uses the browser's print dialog. Copying a room link includes the room name for invitees. Rooms do not require sign-in, so anyone who knows a room name can join; do not use private or sensitive content, and only deploy this application where you trust the users who can access it.
 
 ## Getting Started
 ### Prerequisites
@@ -57,10 +57,10 @@ npm start
 npm --prefix frontend run dev -- --host 0.0.0.0
 ```
 
-Then open the vite localhost url `http://localhost:5173`
+Open the Vite localhost url `http://localhost:5173`
 
 ## Live Demo
-[https://real-time-collaborative-platfrom-production.up.railway.app/](https://real-time-collaborative-platfrom-production.up.railway.app/)
+[https://real-time-collaborative-editor-production.up.railway.app/](https://real-time-collaborative-editor-production.up.railway.app/)
 
 ## Screenshots
 ![alt text](image.png)
