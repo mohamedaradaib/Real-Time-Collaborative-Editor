@@ -68,4 +68,4 @@ Open the Vite localhost url `http://localhost:5173`
 ![alt text](image-1.png)
 
 ## License
-[LICENSE](./LICENSE)
+Distributed under the MIT License. See [LICENSE](./LICENSE) for more information.
